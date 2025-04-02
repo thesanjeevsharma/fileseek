@@ -1,5 +1,6 @@
 import type { File } from '@/types/database';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface FileCardProps {
     file: File;
@@ -10,14 +11,18 @@ interface FileCardProps {
 export function FileCard({ file, onUpvote, onDownvote }: FileCardProps) {
     return (
         <div className="group relative rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-            <Link href={`/files/${file.id}`} className="relative">
+            <Link href={`/files/${file.id}`} className="absolute inset-0" />
+            <div className="relative">
                 <div className="mb-4">
                     {file.thumbnail_url ? (
-                        <img
-                            src={file.thumbnail_url}
-                            alt={file.file_name || 'File thumbnail'}
-                            className="h-32 w-full rounded object-cover"
-                        />
+                        <div className="relative h-32 w-full">
+                            <Image
+                                src={file.thumbnail_url}
+                                alt={file.file_name || 'File thumbnail'}
+                                fill
+                                className="rounded object-cover"
+                            />
+                        </div>
                     ) : (
                         <div className="flex h-32 w-full items-center justify-center rounded bg-gray-100">
                             <span className="text-2xl text-gray-400">
@@ -61,7 +66,7 @@ export function FileCard({ file, onUpvote, onDownvote }: FileCardProps) {
                         </button>
                     </div>
                 </div>
-            </Link>
+            </div>
         </div>
     );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import type { File, Tag } from '@/types/database';
 import { TagList } from '@/components/TagList';
@@ -179,11 +180,14 @@ export default function FileDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
                         {file.thumbnail_url ? (
-                            <img
-                                src={file.thumbnail_url}
-                                alt={file.file_name || 'File thumbnail'}
-                                className="w-full rounded-lg object-cover"
-                            />
+                            <div className="relative w-full h-64">
+                                <Image
+                                    src={file.thumbnail_url}
+                                    alt={file.file_name || 'File thumbnail'}
+                                    fill
+                                    className="rounded-lg object-cover"
+                                />
+                            </div>
                         ) : (
                             <div className="flex h-64 w-full items-center justify-center rounded-lg bg-gray-100">
                                 <span className="text-4xl text-gray-400">

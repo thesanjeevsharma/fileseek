@@ -10,6 +10,7 @@ export function Header() {
     const { address, isConnecting, error: walletError, connect, disconnect } = useWallet();
     const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleFileTagged = (_file: File) => {
         setIsTagModalOpen(false);
         // You might want to add some success notification here
