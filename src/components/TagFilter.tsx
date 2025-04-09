@@ -40,21 +40,30 @@ export function TagFilter({ selectedTags, onTagsChange }: TagFilterProps) {
     };
 
     if (loading) {
-        return <div className="animate-pulse h-8 bg-gray-200 rounded-lg" />;
+        return (
+            <div className="space-y-3">
+                <div className="h-6 w-24 animate-pulse rounded-lg bg-gray-800" />
+                <div className="flex flex-wrap gap-2">
+                    <div className="h-8 w-20 animate-pulse rounded-full bg-gray-800" />
+                    <div className="h-8 w-24 animate-pulse rounded-full bg-gray-800" />
+                    <div className="h-8 w-16 animate-pulse rounded-full bg-gray-800" />
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="space-y-2">
-            <h2 className="text-sm font-medium text-gray-700">Filter by Tags</h2>
+        <div className="space-y-3">
+            <h2 className="text-sm font-medium text-gray-300">Filter by Tags</h2>
             <div className="flex flex-wrap gap-2">
                 {popularTags.map((tag) => (
                     <button
                         key={tag.id}
                         type="button"
                         onClick={() => toggleTag(tag.id)}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag.id)
-                            ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${selectedTags.includes(tag.id)
+                            ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 ring-1 ring-blue-500/50'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
                             }`}
                     >
                         {tag.tag}

@@ -122,17 +122,17 @@ export function TagInput({
 
     return (
         <div className="relative w-full">
-            <div className="flex flex-wrap gap-2 rounded-lg border p-2">
+            <div className="flex flex-wrap gap-2 rounded-xl border border-gray-800 bg-gray-900/50 p-3">
                 {selectedTags.map((tag) => (
                     <span
                         key={tag.id}
-                        className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-sm"
+                        className="flex items-center gap-1 rounded-full bg-blue-500/20 px-3 py-1.5 text-sm text-blue-400 ring-1 ring-blue-500/30"
                     >
                         {tag.tag}
                         <button
                             type="button"
                             onClick={() => handleRemoveTag(tag)}
-                            className="ml-1 rounded-full p-1 hover:bg-blue-200"
+                            className="ml-1 rounded-full p-1 text-blue-400 hover:bg-blue-500/30 hover:text-blue-300 transition-colors"
                             disabled={disabled || isLoading}
                         >
                             ×
@@ -150,7 +150,7 @@ export function TagInput({
                     placeholder={
                         selectedTags.length === 0 ? 'Add tags...' : 'Add another tag...'
                     }
-                    className="flex-1 min-w-[120px] border-none bg-transparent p-1 text-sm focus:outline-none"
+                    className="flex-1 min-w-[120px] border-none bg-transparent p-1.5 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-0"
                     disabled={disabled || isLoading}
                 />
             </div>
@@ -158,7 +158,7 @@ export function TagInput({
             {showSuggestions && suggestions.length > 0 && (
                 <div
                     ref={suggestionsRef}
-                    className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border bg-white shadow-lg"
+                    className="absolute z-10 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-gray-800 bg-gray-900 shadow-2xl"
                 >
                     {suggestions.map((suggestion) => (
                         <button
@@ -168,7 +168,7 @@ export function TagInput({
                                 addTag(suggestion.tag);
                                 inputRef.current?.focus();
                             }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                            className="w-full px-4 py-3 text-left text-sm text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
                         >
                             {suggestion.tag}
                         </button>

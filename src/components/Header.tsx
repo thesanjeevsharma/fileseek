@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useWallet } from '@/contexts/WalletContext';
 import { TagFileModal } from './TagFileModal';
 import type { File } from '@/types/database';
+import { toast } from 'sonner';
 
 export function Header() {
     const { address, isConnecting, error: walletError, connect, disconnect } = useWallet();
@@ -13,33 +14,42 @@ export function Header() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleFileTagged = (_file: File) => {
         setIsTagModalOpen(false);
-        // You might want to add some success notification here
+        toast.success('File tagged successfully');
+    };
+
+    const handleTagFile = () => {
+        if (!address) {
+            toast.error('Please connect your wallet to tag a file');
+            return;
+        }
+        setIsTagModalOpen(true);
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-white">
+        <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-black/80 backdrop-blur-sm">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/" className="flex items-center space-x-2">
-                    <span className="text-xl font-bold">FileSeek</span>
+                    <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-xl font-bold text-transparent">
+                        FileSeek
+                    </span>
                 </Link>
 
                 <nav className="flex items-center space-x-4">
                     <button
                         type="button"
-                        onClick={() => setIsTagModalOpen(true)}
-                        className="cursor-pointer rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
-                        disabled={!address}
+                        onClick={handleTagFile}
+                        className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-400 transition-all duration-200 hover:bg-blue-500/20 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Tag a File
                     </button>
                     {walletError && (
-                        <span className="text-sm text-red-600" role="alert">
+                        <span className="text-sm text-red-400" role="alert">
                             {walletError}
                         </span>
                     )}
                     <button
                         type="button"
-                        className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                         onClick={address ? disconnect : connect}
                         disabled={isConnecting}
                     >

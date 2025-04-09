@@ -9,6 +9,8 @@ import type { File, Tag } from '@/types/database';
 import { TagList } from '@/components/TagList';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { useWallet } from '@/contexts/WalletContext';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface FileWithTags extends File {
     tags: Tag[];
@@ -72,7 +74,7 @@ export default function FileDetailPage() {
         fetchFileDetails();
     }, [id]);
 
-    const handleReport = async () => {
+    const handleReportConfirmation = async () => {
         if (!file || !address) return;
 
         try {
@@ -102,16 +104,25 @@ export default function FileDetailPage() {
             if (reportError) throw reportError;
 
             // Show success message or update UI
-            alert('File reported successfully');
+            toast.success('File reported successfully');
         } catch (err) {
             console.error('Error reporting file:', err);
-            alert('Failed to report file. Please try again.');
+            toast.error('Failed to report file. Please try again.');
         } finally {
             setIsSubmitting(false);
             setReportReason('');
             setIsReportModalOpen(false);
         }
     };
+
+    const handleReport = () => {
+        if (!address) {
+            toast.error('Please connect your wallet to report a file');
+            return;
+        }
+
+        setIsReportModalOpen(true);
+    }
 
     function formatFileSize(bytes: number): string {
         const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -129,12 +140,12 @@ export default function FileDetailPage() {
     if (loading) {
         return (
             <div className="container mx-auto px-4 py-8">
-                <div className="animate-pulse">
-                    <div className="h-8 w-1/3 bg-gray-200 rounded mb-4" />
-                    <div className="space-y-3">
-                        <div className="h-4 bg-gray-200 rounded w-1/4" />
-                        <div className="h-4 bg-gray-200 rounded w-1/2" />
-                        <div className="h-4 bg-gray-200 rounded w-1/3" />
+                <div className="animate-pulse space-y-8">
+                    <div className="h-8 w-1/3 rounded-lg bg-gray-800" />
+                    <div className="space-y-4">
+                        <div className="h-4 w-1/4 rounded-lg bg-gray-800" />
+                        <div className="h-4 w-1/2 rounded-lg bg-gray-800" />
+                        <div className="h-4 w-1/3 rounded-lg bg-gray-800" />
                     </div>
                 </div>
             </div>
@@ -144,12 +155,12 @@ export default function FileDetailPage() {
     if (error || !file) {
         return (
             <div className="container mx-auto px-4 py-8">
-                <div className="rounded-lg bg-red-50 p-4 text-red-600">
+                <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-red-400">
                     {error || 'File not found'}
                 </div>
                 <Link
                     href="/"
-                    className="mt-4 inline-block text-blue-600 hover:underline"
+                    className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
                 >
                     ← Back to files
                 </Link>
@@ -158,150 +169,153 @@ export default function FileDetailPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="mb-6 flex items-center justify-between">
-                <Link
-                    href="/"
-                    className="text-blue-600 hover:underline inline-flex items-center"
-                >
-                    ← Back to files
-                </Link>
-                <button
-                    type="button"
-                    onClick={() => setIsReportModalOpen(true)}
-                    className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
-                    disabled={!address}
-                >
-                    Report File
-                </button>
-            </div>
+        <div className="min-h-screen bg-black text-white">
+            <div className="container mx-auto px-4 py-8">
+                <div className="mb-6 flex items-center justify-between">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                        ← Back to files
+                    </Link>
+                    <Button
+                        variant="destructive"
+                        type="button"
+                        onClick={handleReport}
+                    >
+                        Report File
+                    </Button>
+                </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        {file.thumbnail_url ? (
-                            <div className="relative w-full h-64">
-                                <Image
-                                    src={file.thumbnail_url}
-                                    alt={file.file_name || 'File thumbnail'}
-                                    fill
-                                    className="rounded-lg object-cover"
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex h-64 w-full items-center justify-center rounded-lg bg-gray-100">
-                                <span className="text-4xl text-gray-400">
-                                    {file.file_type.toUpperCase()}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-4">
-                        <h1 className="text-2xl font-bold">
-                            {file.file_name || 'Unnamed File'}
-                        </h1>
-
-                        <dl className="grid grid-cols-1 gap-4">
-                            <div>
-                                <dt className="text-sm font-medium text-gray-500">
-                                    Filecoin Hash
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900 break-all">
-                                    {file.filecoin_hash}
-                                </dd>
-                            </div>
-
-                            <div>
-                                <dt className="text-sm font-medium text-gray-500">
-                                    File Type
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900">
-                                    {file.file_type}
-                                </dd>
-                            </div>
-
-                            <div>
-                                <dt className="text-sm font-medium text-gray-500">
-                                    File Size
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900">
-                                    {formatFileSize(file.file_size)}
-                                </dd>
-                            </div>
-
-                            <div>
-                                <dt className="text-sm font-medium text-gray-500">
-                                    Network
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900">
-                                    {file.network}
-                                </dd>
-                            </div>
-
-                            <div>
-                                <dt className="text-sm font-medium text-gray-500">
-                                    Upload Date
-                                </dt>
-                                <dd className="mt-1 text-sm text-gray-900">
-                                    {new Date(file.upload_date).toLocaleDateString()}
-                                </dd>
-                            </div>
-
-                            {file.description && (
-                                <div>
-                                    <dt className="text-sm font-medium text-gray-500">
-                                        Description
-                                    </dt>
-                                    <dd className="mt-1 text-sm text-gray-900">
-                                        {file.description}
-                                    </dd>
+                <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            {file.thumbnail_url ? (
+                                <div className="relative h-80 w-full overflow-hidden rounded-xl border border-gray-800">
+                                    <Image
+                                        src={file.thumbnail_url}
+                                        alt={file.file_name || 'File thumbnail'}
+                                        fill
+                                        className="object-cover transition-all hover:scale-105"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="flex h-80 w-full items-center justify-center rounded-xl border border-gray-800 bg-gray-900/50">
+                                    <span className="text-5xl font-medium text-gray-600">
+                                        {file.file_type.toUpperCase()}
+                                    </span>
                                 </div>
                             )}
+                        </div>
 
-                            <div>
-                                <dt className="text-sm font-medium text-gray-500">
-                                    Tags
-                                </dt>
-                                <dd className="mt-1">
-                                    <TagList tags={file.tags} />
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
-                </div>
-            </div>
+                        <div className="space-y-6">
+                            <h1 className="text-3xl font-bold text-white">
+                                {file.file_name || 'Unnamed File'}
+                            </h1>
 
-            <ConfirmationModal
-                isOpen={isReportModalOpen}
-                onClose={() => {
-                    setIsReportModalOpen(false);
-                    setReportReason('');
-                }}
-                onConfirm={handleReport}
-                title="Report File"
-                message={
-                    <div className="space-y-4">
-                        <p>Are you sure you want to report this file?</p>
-                        <div>
-                            <label htmlFor="reportReason" className="block text-sm font-medium text-gray-700">
-                                Reason for reporting (optional)
-                            </label>
-                            <textarea
-                                id="reportReason"
-                                rows={3}
-                                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                value={reportReason}
-                                onChange={(e) => setReportReason(e.target.value)}
-                                placeholder="Please provide a reason for reporting this file..."
-                                disabled={isSubmitting}
-                            />
+                            <dl className="grid grid-cols-1 gap-4">
+                                <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                    <dt className="text-sm font-medium text-gray-400">
+                                        Filecoin Hash
+                                    </dt>
+                                    <dd className="mt-1 font-mono text-sm text-gray-300 break-all">
+                                        {file.filecoin_hash}
+                                    </dd>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                        <dt className="text-sm font-medium text-gray-400">
+                                            File Type
+                                        </dt>
+                                        <dd className="mt-1 text-sm text-gray-300">
+                                            {file.file_type}
+                                        </dd>
+                                    </div>
+
+                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                        <dt className="text-sm font-medium text-gray-400">
+                                            File Size
+                                        </dt>
+                                        <dd className="mt-1 text-sm text-gray-300">
+                                            {formatFileSize(file.file_size)}
+                                        </dd>
+                                    </div>
+
+                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                        <dt className="text-sm font-medium text-gray-400">
+                                            Network
+                                        </dt>
+                                        <dd className="mt-1 text-sm text-gray-300">
+                                            {file.network}
+                                        </dd>
+                                    </div>
+
+                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                        <dt className="text-sm font-medium text-gray-400">
+                                            Upload Date
+                                        </dt>
+                                        <dd className="mt-1 text-sm text-gray-300">
+                                            {new Date(file.upload_date).toLocaleDateString()}
+                                        </dd>
+                                    </div>
+                                </div>
+
+                                {file.description && (
+                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                        <dt className="text-sm font-medium text-gray-400">
+                                            Description
+                                        </dt>
+                                        <dd className="mt-1 text-sm text-gray-300">
+                                            {file.description}
+                                        </dd>
+                                    </div>
+                                )}
+
+                                <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                    <dt className="text-sm font-medium text-gray-400">
+                                        Tags
+                                    </dt>
+                                    <dd className="mt-2">
+                                        <TagList tags={file.tags} />
+                                    </dd>
+                                </div>
+                            </dl>
                         </div>
                     </div>
-                }
-                confirmText={isSubmitting ? 'Submitting...' : 'Submit Report'}
-                cancelText="Cancel"
-            />
+                </div>
+
+                <ConfirmationModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => {
+                        setIsReportModalOpen(false);
+                        setReportReason('');
+                    }}
+                    onConfirm={handleReportConfirmation}
+                    title="Report File"
+                    message={
+                        <div className="space-y-4">
+                            <p className="text-gray-300">Are you sure you want to report this file?</p>
+                            <div>
+                                <label htmlFor="reportReason" className="block text-sm font-medium text-gray-300">
+                                    Reason for reporting (optional)
+                                </label>
+                                <textarea
+                                    id="reportReason"
+                                    rows={3}
+                                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    value={reportReason}
+                                    onChange={(e) => setReportReason(e.target.value)}
+                                    placeholder="Please provide a reason for reporting this file..."
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        </div>
+                    }
+                    confirmText={isSubmitting ? 'Submitting...' : 'Submit Report'}
+                    cancelText="Cancel"
+                />
+            </div>
         </div>
     );
 } 

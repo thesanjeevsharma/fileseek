@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { File, Tag } from '@/types/database';
 import { TagInput } from './TagInput';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface TagFileFormProps {
     onSuccess: (file: File) => void;
@@ -17,7 +19,7 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
         file_name: '',
         file_type: '',
         file_size: '',
-        network: '',
+        network: 'filecoin',
         description: '',
         thumbnail_url: '',
     });
@@ -86,9 +88,10 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
             }
 
             onSuccess(file);
+            toast.success('File saved successfully');
         } catch (err) {
             console.error('Error saving file:', err);
-            setError(err instanceof Error ? err.message : 'An error occurred while saving the file');
+            toast.error(err instanceof Error ? err.message : 'An error occurred while saving the file');
         } finally {
             setLoading(false);
         }
@@ -102,9 +105,9 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-                <label htmlFor="filecoin_hash" className="block text-sm font-medium">
+                <label htmlFor="filecoin_hash" className="block text-sm font-medium text-gray-300">
                     Filecoin Hash *
                 </label>
                 <input
@@ -112,28 +115,28 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                     id="filecoin_hash"
                     name="filecoin_hash"
                     required
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.filecoin_hash}
                     onChange={handleChange}
                 />
             </div>
 
             <div>
-                <label htmlFor="file_name" className="block text-sm font-medium">
+                <label htmlFor="file_name" className="block text-sm font-medium text-gray-300">
                     File Name
                 </label>
                 <input
                     type="text"
                     id="file_name"
                     name="file_name"
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.file_name}
                     onChange={handleChange}
                 />
             </div>
 
             <div>
-                <label htmlFor="file_type" className="block text-sm font-medium">
+                <label htmlFor="file_type" className="block text-sm font-medium text-gray-300">
                     File Type *
                 </label>
                 <input
@@ -141,14 +144,14 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                     id="file_type"
                     name="file_type"
                     required
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.file_type}
                     onChange={handleChange}
                 />
             </div>
 
             <div>
-                <label htmlFor="file_size" className="block text-sm font-medium">
+                <label htmlFor="file_size" className="block text-sm font-medium text-gray-300">
                     File Size (bytes) *
                 </label>
                 <input
@@ -157,14 +160,14 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                     name="file_size"
                     required
                     min="0"
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.file_size}
                     onChange={handleChange}
                 />
             </div>
 
-            <div>
-                <label htmlFor="network" className="block text-sm font-medium">
+            {/* <div>
+                <label htmlFor="network" className="block text-sm font-medium text-gray-300">
                     Network *
                 </label>
                 <input
@@ -172,43 +175,45 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                     id="network"
                     name="network"
                     required
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.network}
                     onChange={handleChange}
                 />
-            </div>
+            </div> */}
 
             <div>
-                <label htmlFor="thumbnail_url" className="block text-sm font-medium">
+                <label htmlFor="thumbnail_url" className="block text-sm font-medium text-gray-300">
                     Thumbnail URL
                 </label>
                 <input
                     type="url"
                     id="thumbnail_url"
                     name="thumbnail_url"
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.thumbnail_url}
                     onChange={handleChange}
                 />
             </div>
 
             <div>
-                <label htmlFor="description" className="block text-sm font-medium">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-300">
                     Description
                 </label>
                 <textarea
                     id="description"
                     name="description"
                     rows={3}
-                    className="mt-1 block w-full rounded-lg border px-3 py-2"
+                    className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.description}
                     onChange={handleChange}
                 />
             </div>
 
             <div>
-                <label htmlFor="tags" className="block text-sm font-medium">Tags</label>
-                <div className="mt-1">
+                <label htmlFor="tags" className="block text-sm font-medium text-gray-300">
+                    Tags
+                </label>
+                <div className="mt-2">
                     <TagInput
                         id="tags"
                         onTagsChange={setSelectedTags}
@@ -218,27 +223,26 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
             </div>
 
             {error && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
                     {error}
                 </div>
             )}
 
-            <div className="flex justify-end space-x-3">
-                <button
+            <div className="flex justify-end space-x-4">
+                <Button
                     type="button"
+                    variant="outline"
                     onClick={onCancel}
-                    className="rounded-lg border px-4 py-2 hover:bg-gray-50"
                     disabled={loading}
                 >
                     Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                     type="submit"
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
                     disabled={loading}
                 >
                     {loading ? 'Saving...' : 'Save'}
-                </button>
+                </Button>
             </div>
         </form>
     );

@@ -12,8 +12,14 @@ interface TagFileModalProps {
 
 export function TagFileModal({ isOpen, onClose, onSuccess }: TagFileModalProps) {
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Tag a File">
-            <TagFileForm onSuccess={onSuccess} onCancel={onClose} />
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Tag a File"
+        >
+            <div className="mt-2">
+                <TagFileForm onSuccess={onSuccess} onCancel={onClose} />
+            </div>
         </Modal>
     );
 } 
