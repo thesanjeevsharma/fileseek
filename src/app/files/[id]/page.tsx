@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,9 +11,13 @@ import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { useWallet } from '@/contexts/WalletContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DocumentDuplicateIcon, HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
 
 interface FileWithTags extends File {
     tags: Tag[];
+    upvotes: number;
+    downvotes: number;
 }
 
 interface FileTagResponse {
@@ -31,6 +35,7 @@ export default function FileDetailPage() {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [userVote, setUserVote] = useState<1 | -1 | null>(null);
 
     useEffect(() => {
         async function fetchFileDetails() {
@@ -40,7 +45,8 @@ export default function FileDetailPage() {
                 setLoading(true);
                 setError(null);
 
-                const { data, error: fileError } = await supabase
+                // First fetch the file details
+                const { data: fileData, error: fileError } = await supabase
                     .from('files')
                     .select(`
                         *,
@@ -52,12 +58,26 @@ export default function FileDetailPage() {
                     .single();
 
                 if (fileError) throw fileError;
-                if (!data) throw new Error('File not found');
+                if (!fileData) throw new Error('File not found');
+
+                // Then fetch the vote counts
+                const { data: voteData, error: voteError } = await supabase
+                    .from('votes')
+                    .select('vote_type')
+                    .eq('file_id', id);
+
+                if (voteError) throw voteError;
+
+                // Calculate upvotes and downvotes
+                const upvotes = voteData?.filter(v => v.vote_type === 1).length || 0;
+                const downvotes = voteData?.filter(v => v.vote_type === -1).length || 0;
 
                 // Transform the data to match our FileWithTags interface
                 const fileWithTags: FileWithTags = {
-                    ...data,
-                    tags: (data as unknown as FileTagResponse).file_tags?.map(ft => ft.tags) || [],
+                    ...fileData,
+                    tags: (fileData as unknown as FileTagResponse).file_tags?.map(ft => ft.tags) || [],
+                    upvotes,
+                    downvotes
                 };
 
                 setFile(fileWithTags);
@@ -73,6 +93,123 @@ export default function FileDetailPage() {
 
         fetchFileDetails();
     }, [id]);
+
+    const fetchUserVote = useCallback(async () => {
+        if (!id || !address) return;
+
+        try {
+            // Get user's UUID from their wallet address
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('wallet_address', address)
+                .single();
+
+            if (userError) throw userError;
+            if (!userData) return;
+
+            // Get user's vote for this file
+            const { data: voteData, error: voteError } = await supabase
+                .from('votes')
+                .select('vote_type')
+                .eq('file_id', id)
+                .eq('user_id', userData.id)
+                .single();
+
+            if (voteError && voteError.code !== 'PGRST116') throw voteError; // PGRST116 is "no rows returned"
+            setUserVote(voteData?.vote_type || null);
+        } catch (err) {
+            console.error('Error fetching user vote:', err);
+        }
+    }, [id, address]);
+
+    useEffect(() => {
+        if (id && address) {
+            fetchUserVote();
+        }
+    }, [id, address, fetchUserVote]);
+
+    const handleVote = async (voteType: 1 | -1) => {
+        if (!file || !address) {
+            toast.error('Please connect your wallet to vote');
+            return;
+        }
+
+        try {
+            // Get user's UUID from their wallet address
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('wallet_address', address)
+                .single();
+
+            if (userError) throw userError;
+            if (!userData) throw new Error('User not found');
+
+            // Check if user has already voted
+            const { data: existingVote, error: voteCheckError } = await supabase
+                .from('votes')
+                .select('*')
+                .eq('file_id', file.id)
+                .eq('user_id', userData.id)
+                .maybeSingle();
+
+            if (voteCheckError) throw voteCheckError;
+
+            // If user is voting the same way, remove their vote
+            if (existingVote?.vote_type === voteType) {
+                const { error: deleteError } = await supabase
+                    .from('votes')
+                    .delete()
+                    .eq('id', existingVote.id);
+
+                if (deleteError) throw deleteError;
+                setUserVote(null);
+                setFile(prev => prev ? {
+                    ...prev,
+                    upvotes: voteType === 1 ? prev.upvotes - 1 : prev.upvotes,
+                    downvotes: voteType === -1 ? prev.downvotes - 1 : prev.downvotes
+                } : null);
+                toast.success('Vote removed');
+            } else if (existingVote) {
+                // Update existing vote
+                const { error: updateError } = await supabase
+                    .from('votes')
+                    .update({ vote_type: voteType })
+                    .eq('id', existingVote.id);
+
+                if (updateError) throw updateError;
+                setUserVote(voteType);
+                setFile(prev => prev ? {
+                    ...prev,
+                    upvotes: voteType === 1 ? prev.upvotes + 1 : prev.upvotes - 1,
+                    downvotes: voteType === -1 ? prev.downvotes + 1 : prev.downvotes - 1
+                } : null);
+                toast.success(voteType === 1 ? 'Upvoted!' : 'Downvoted!');
+            } else {
+                // Create new vote
+                const { error: insertError } = await supabase
+                    .from('votes')
+                    .insert({
+                        file_id: file.id,
+                        user_id: userData.id,
+                        vote_type: voteType
+                    });
+
+                if (insertError) throw insertError;
+                setUserVote(voteType);
+                setFile(prev => prev ? {
+                    ...prev,
+                    upvotes: voteType === 1 ? prev.upvotes + 1 : prev.upvotes,
+                    downvotes: voteType === -1 ? prev.downvotes + 1 : prev.downvotes
+                } : null);
+                toast.success(voteType === 1 ? 'Upvoted!' : 'Downvoted!');
+            }
+        } catch (err) {
+            console.error('Error voting:', err);
+            toast.error('Failed to register vote. Please try again.');
+        }
+    };
 
     const handleReportConfirmation = async () => {
         if (!file || !address) return;
@@ -218,8 +355,19 @@ export default function FileDetailPage() {
                                     <dt className="text-sm font-medium text-gray-400">
                                         Filecoin Hash
                                     </dt>
-                                    <dd className="mt-1 font-mono text-sm text-gray-300 break-all">
+                                    <dd className="mt-1 font-mono text-sm text-gray-300 break-all flex items-center gap-2">
                                         {file.filecoin_hash}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(file.filecoin_hash);
+                                                toast.success('Hash copied to clipboard');
+                                            }}
+                                            className="p-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+                                            title="Copy hash"
+                                        >
+                                            <DocumentDuplicateIcon className="h-4 w-4 text-gray-400 cursor-pointer" />
+                                        </button>
                                     </dd>
                                 </div>
 
@@ -253,10 +401,43 @@ export default function FileDetailPage() {
 
                                     <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
                                         <dt className="text-sm font-medium text-gray-400">
+                                            Votes
+                                        </dt>
+                                        <dd className="mt-2 flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleVote(1)}
+                                                className={`rounded-lg p-2 transition-colors ${userVote === 1
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : 'hover:bg-gray-800 text-gray-400'
+                                                    }`}
+                                                title="Upvote"
+                                            >
+                                                <HandThumbUpIcon className="h-5 w-5" />
+                                            </button>
+                                            <span className="text-sm text-gray-300">
+                                                {file.upvotes - file.downvotes}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleVote(-1)}
+                                                className={`rounded-lg p-2 transition-colors ${userVote === -1
+                                                    ? 'bg-red-500/20 text-red-400'
+                                                    : 'hover:bg-gray-800 text-gray-400'
+                                                    }`}
+                                                title="Downvote"
+                                            >
+                                                <HandThumbDownIcon className="h-5 w-5" />
+                                            </button>
+                                        </dd>
+                                    </div>
+
+                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                        <dt className="text-sm font-medium text-gray-400">
                                             Upload Date
                                         </dt>
                                         <dd className="mt-1 text-sm text-gray-300">
-                                            {new Date(file.upload_date).toLocaleDateString()}
+                                            {format(new Date(file.upload_date), 'PPP')}
                                         </dd>
                                     </div>
                                 </div>

@@ -3,12 +3,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 interface FileCardProps {
-    file: File;
-    onUpvote: () => void;
-    onDownvote: () => void;
+    file: File & {
+        votes?: { vote_type: number }[];
+    };
 }
 
-export function FileCard({ file, onUpvote, onDownvote }: FileCardProps) {
+export function FileCard({ file }: FileCardProps) {
+    // Calculate total votes
+    const votes = file.votes?.reduce((acc, vote) => acc + vote.vote_type, 0) || 0;
+
     return (
         <div className="group relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900 p-5 transition-all duration-200 hover:border-gray-700 hover:shadow-lg hover:shadow-blue-500/5">
             <Link className="relative" href={`/files/${file.id}`}>
@@ -35,39 +38,17 @@ export function FileCard({ file, onUpvote, onDownvote }: FileCardProps) {
                     {file.file_name || 'Unnamed File'}
                 </h3>
 
-                <div className="mb-6 grid grid-cols-2 gap-3">
-                    <div className="flex items-center space-x-3 rounded-lg bg-gray-900/50 px-4 py-3 ring-1 ring-gray-800/60">
-                        <span className="text-sm font-medium text-gray-500">Type</span>
+                <div className="grid grid-cols-3 gap-1">
+                    <div className="flex items-center justify-center space-x-3 rounded-lg bg-gray-900/50 px-2 py-3 ring-1 ring-gray-800/60">
                         <span className="text-sm text-gray-300">{file.file_type}</span>
                     </div>
-                    <div className="flex items-center space-x-3 rounded-lg bg-gray-900/50 px-4 py-3 ring-1 ring-gray-800/60">
-                        <span className="text-sm font-medium text-gray-500">Size</span>
+                    <div className="flex items-center justify-center space-x-3 rounded-lg bg-gray-900/50 px-2 py-3 ring-1 ring-gray-800/60">
                         <span className="text-sm text-gray-300">{formatFileSize(file.file_size)}</span>
                     </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                    <div className="relative z-10 flex space-x-1">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                onUpvote();
-                            }}
-                            className="rounded-lg bg-gray-800 px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
-                        >
-                            👍
-                        </button>
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                onDownvote();
-                            }}
-                            className="rounded-lg bg-gray-800 px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
-                        >
-                            👎
-                        </button>
+                    <div className="flex items-center justify-center space-x-2 rounded-lg bg-gray-800 px-2 py-2">
+                        <span className={`text-sm ${votes > 0 ? 'text-green-400' : votes < 0 ? 'text-red-400' : 'text-gray-300'}`}>
+                            {votes > 0 ? `+${votes}` : votes}
+                        </span>
                     </div>
                 </div>
             </Link>

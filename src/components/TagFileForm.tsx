@@ -30,6 +30,8 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
         setError(null);
 
         try {
+            console.log('selectedTags', selectedTags);
+
             // First, ensure all temporary tags are created in the database
             const tagPromises = selectedTags
                 .filter(tag => tag.id.startsWith('temp-'))
@@ -56,6 +58,8 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                     return [tag.id, tag.id];
                 })
             );
+
+            console.log('tagMap', tagMap);
 
             // Create the file
             const { data: file, error: fileError } = await supabase
