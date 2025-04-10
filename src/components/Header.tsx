@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useWallet } from '@/contexts/WalletContext';
+import { useUser } from '@/hooks/useUser';
 import { TagFileModal } from './TagFileModal';
 import type { File } from '@/types/database';
 import { toast } from 'sonner';
 
 export function Header() {
     const { address, isConnecting, error: walletError, connect, disconnect } = useWallet();
+    const { user } = useUser();
     const [isTagModalOpen, setIsTagModalOpen] = useState(false);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -35,6 +37,12 @@ export function Header() {
                 </Link>
 
                 <nav className="flex items-center space-x-4">
+                    {address && (
+                        <div className="flex items-center space-x-2 text-sm text-gray-400">
+                            <span>Points:</span>
+                            <span className="font-medium text-blue-400">{user?.reward_points || 0}</span>
+                        </div>
+                    )}
                     <button
                         type="button"
                         onClick={handleTagFile}

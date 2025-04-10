@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useUser } from '@/hooks/useUser';
 import type { File, Tag } from '@/types/database';
 import { TagInput } from './TagInput';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { REWARD_POINTS } from '@/config/rewards';
+import { updateUserPoints } from '@/lib/rewards';
 
 interface TagFileFormProps {
     onSuccess: (file: File) => void;
@@ -11,6 +14,7 @@ interface TagFileFormProps {
 }
 
 export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
+    const { user, refreshUser } = useUser();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -30,7 +34,7 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
         setError(null);
 
         try {
-            console.log('selectedTags', selectedTags);
+            if (!user) throw new Error('Please connect your wallet to tag a file');
 
             // First, ensure all temporary tags are created in the database
             const tagPromises = selectedTags
@@ -59,8 +63,6 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                 })
             );
 
-            console.log('tagMap', tagMap);
-
             // Create the file
             const { data: file, error: fileError } = await supabase
                 .from('files')
@@ -69,6 +71,7 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                         ...formData,
                         file_size: Number.parseInt(formData.file_size, 10),
                         upload_date: new Date().toISOString(),
+                        user_id: user.id,
                     },
                 ])
                 .select()
@@ -90,6 +93,10 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
 
                 if (tagError) throw tagError;
             }
+
+            // Award points for tagging a file
+            await updateUserPoints(user.id, REWARD_POINTS.TAG_FILE);
+            await refreshUser();
 
             onSuccess(file);
             toast.success('File saved successfully');

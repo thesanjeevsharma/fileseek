@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { DocumentDuplicateIcon, HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+import { REWARD_POINTS } from '@/config/rewards';
+import { updateUserPoints } from '@/lib/rewards';
+import { useUser } from '@/hooks/useUser';
 
 interface FileWithTags extends File {
     tags: Tag[];
@@ -29,6 +32,7 @@ interface FileTagResponse {
 export default function FileDetailPage() {
     const { id } = useParams();
     const { address } = useWallet();
+    const { refreshUser } = useUser();
     const [file, setFile] = useState<FileWithTags | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -156,7 +160,17 @@ export default function FileDetailPage() {
 
             if (voteCheckError) throw voteCheckError;
 
-            // If user is voting the same way, remove their vote
+            // Get the file owner's ID to award/deduct points
+            const { data: fileData, error: fileError } = await supabase
+                .from('files')
+                .select('user_id')
+                .eq('id', file.id)
+                .single();
+
+            if (fileError) throw fileError;
+            if (!fileData?.user_id) throw new Error('File owner not found');
+
+            // If user is voting the same way, remove their vote and revert points
             if (existingVote?.vote_type === voteType) {
                 const { error: deleteError } = await supabase
                     .from('votes')
@@ -164,6 +178,14 @@ export default function FileDetailPage() {
                     .eq('id', existingVote.id);
 
                 if (deleteError) throw deleteError;
+
+                // Revert points based on vote type
+                if (voteType === 1) {
+                    await updateUserPoints(fileData.user_id, -REWARD_POINTS.UPVOTE_RECEIVED);
+                } else {
+                    await updateUserPoints(fileData.user_id, -REWARD_POINTS.DOWNVOTE_RECEIVED);
+                }
+
                 setUserVote(null);
                 setFile(prev => prev ? {
                     ...prev,
@@ -179,6 +201,20 @@ export default function FileDetailPage() {
                     .eq('id', existingVote.id);
 
                 if (updateError) throw updateError;
+
+                // Revert old vote points and add new vote points
+                if (existingVote.vote_type === 1) {
+                    await updateUserPoints(fileData.user_id, -REWARD_POINTS.UPVOTE_RECEIVED);
+                } else {
+                    await updateUserPoints(fileData.user_id, -REWARD_POINTS.DOWNVOTE_RECEIVED);
+                }
+
+                if (voteType === 1) {
+                    await updateUserPoints(fileData.user_id, REWARD_POINTS.UPVOTE_RECEIVED);
+                } else {
+                    await updateUserPoints(fileData.user_id, REWARD_POINTS.DOWNVOTE_RECEIVED);
+                }
+
                 setUserVote(voteType);
                 setFile(prev => prev ? {
                     ...prev,
@@ -197,6 +233,14 @@ export default function FileDetailPage() {
                     });
 
                 if (insertError) throw insertError;
+
+                // Award points based on vote type
+                if (voteType === 1) {
+                    await updateUserPoints(fileData.user_id, REWARD_POINTS.UPVOTE_RECEIVED);
+                } else {
+                    await updateUserPoints(fileData.user_id, REWARD_POINTS.DOWNVOTE_RECEIVED);
+                }
+
                 setUserVote(voteType);
                 setFile(prev => prev ? {
                     ...prev,
@@ -205,6 +249,8 @@ export default function FileDetailPage() {
                 } : null);
                 toast.success(voteType === 1 ? 'Upvoted!' : 'Downvoted!');
             }
+
+            await refreshUser();
         } catch (err) {
             console.error('Error voting:', err);
             toast.error('Failed to register vote. Please try again.');
@@ -371,7 +417,7 @@ export default function FileDetailPage() {
                                     </dd>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
                                         <dt className="text-sm font-medium text-gray-400">
                                             File Type

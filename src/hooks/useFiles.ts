@@ -3,6 +3,8 @@ import type { File } from "@/types/database";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "./useUser";
 import { toast } from "sonner";
+import { REWARD_POINTS } from "@/config/rewards";
+import { updateUserPoints } from "@/lib/rewards";
 
 interface UseFilesOptions {
 	limit?: number;
@@ -143,7 +145,17 @@ export function useFiles({
 
 			if (voteCheckError) throw voteCheckError;
 
-			// If user is voting the same way, remove their vote
+			// Get the file owner's ID to award/deduct points
+			const { data: fileData, error: fileError } = await supabase
+				.from("files")
+				.select("user_id")
+				.eq("id", fileId)
+				.single();
+
+			if (fileError) throw fileError;
+			if (!fileData?.user_id) throw new Error("File owner not found");
+
+			// If user is voting the same way, remove their vote and revert points
 			if (existingVote?.vote_type === voteType) {
 				const { error: deleteError } = await supabase
 					.from("votes")
@@ -151,6 +163,20 @@ export function useFiles({
 					.eq("id", existingVote.id);
 
 				if (deleteError) throw deleteError;
+
+				// Revert points based on vote type
+				if (voteType === 1) {
+					await updateUserPoints(
+						fileData.user_id,
+						-REWARD_POINTS.UPVOTE_RECEIVED,
+					);
+				} else {
+					await updateUserPoints(
+						fileData.user_id,
+						-REWARD_POINTS.DOWNVOTE_RECEIVED,
+					);
+				}
+
 				toast.success("Vote removed");
 			} else if (existingVote) {
 				// Update existing vote
@@ -160,6 +186,32 @@ export function useFiles({
 					.eq("id", existingVote.id);
 
 				if (updateError) throw updateError;
+
+				// Revert old vote points and add new vote points
+				if (existingVote.vote_type === 1) {
+					await updateUserPoints(
+						fileData.user_id,
+						-REWARD_POINTS.UPVOTE_RECEIVED,
+					);
+				} else {
+					await updateUserPoints(
+						fileData.user_id,
+						-REWARD_POINTS.DOWNVOTE_RECEIVED,
+					);
+				}
+
+				if (voteType === 1) {
+					await updateUserPoints(
+						fileData.user_id,
+						REWARD_POINTS.UPVOTE_RECEIVED,
+					);
+				} else {
+					await updateUserPoints(
+						fileData.user_id,
+						REWARD_POINTS.DOWNVOTE_RECEIVED,
+					);
+				}
+
 				toast.success(voteType === 1 ? "Upvoted!" : "Downvoted!");
 			} else {
 				// Create new vote
@@ -170,6 +222,20 @@ export function useFiles({
 				});
 
 				if (insertError) throw insertError;
+
+				// Award points based on vote type
+				if (voteType === 1) {
+					await updateUserPoints(
+						fileData.user_id,
+						REWARD_POINTS.UPVOTE_RECEIVED,
+					);
+				} else {
+					await updateUserPoints(
+						fileData.user_id,
+						REWARD_POINTS.DOWNVOTE_RECEIVED,
+					);
+				}
+
 				toast.success(voteType === 1 ? "Upvoted!" : "Downvoted!");
 			}
 

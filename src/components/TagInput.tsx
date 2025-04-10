@@ -26,7 +26,7 @@ export function TagInput({
     const inputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
 
-    const { searchTags, addTagToFile, removeTagFromFile, isLoading } = useTags();
+    const { searchTags, removeTagFromFile, isLoading } = useTags();
 
     useEffect(() => {
         // Handle clicks outside of suggestions
@@ -84,19 +84,17 @@ export function TagInput({
             return;
         }
 
-        if (fileId) {
-            await addTagToFile(fileId, normalizedTag);
-            // Refresh tags after adding
-            // Note: In a real app, you might want to handle optimistic updates
-            const updatedTags = await searchTags(normalizedTag);
-            const newTag = updatedTags.find(
-                (tag) => tag.tag.toLowerCase() === normalizedTag
-            );
-            if (newTag) {
-                setSelectedTags((prev) => [...prev, newTag]);
-            }
+        const suggestion = suggestions.find(
+            (suggestion) => suggestion.tag.toLowerCase() === normalizedTag
+        );
+
+        if (suggestion) {
+            const newTag: Tag = {
+                id: suggestion.id,
+                tag: normalizedTag,
+            };
+            setSelectedTags((prev) => [...prev, newTag]);
         } else {
-            // For new files, just add to the local state
             const newTag: Tag = {
                 id: `temp-${Date.now()}`,
                 tag: normalizedTag,
