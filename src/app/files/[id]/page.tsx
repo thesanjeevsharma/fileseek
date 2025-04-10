@@ -11,16 +11,28 @@ import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { useWallet } from '@/contexts/WalletContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { DocumentDuplicateIcon, HandThumbUpIcon, HandThumbDownIcon } from '@heroicons/react/24/outline';
+import { DocumentDuplicateIcon, HandThumbUpIcon, HandThumbDownIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { REWARD_POINTS } from '@/config/rewards';
 import { updateUserPoints } from '@/lib/rewards';
 import { useUser } from '@/hooks/useUser';
+import { Textarea } from '@/components/ui/textarea';
+
+interface Comment {
+    id: string;
+    user_id: string;
+    comment: string;
+    created_at: string;
+    users: {
+        wallet_address: string;
+    };
+}
 
 interface FileWithTags extends File {
     tags: Tag[];
     upvotes: number;
     downvotes: number;
+    comments?: Comment[];
 }
 
 interface FileTagResponse {
@@ -40,6 +52,9 @@ export default function FileDetailPage() {
     const [reportReason, setReportReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userVote, setUserVote] = useState<1 | -1 | null>(null);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
     useEffect(() => {
         async function fetchFileDetails() {
@@ -320,6 +335,114 @@ export default function FileDetailPage() {
         return `${size.toFixed(1)} ${units[unitIndex]}`;
     }
 
+    useEffect(() => {
+        async function fetchComments() {
+            if (!id) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('comments')
+                    .select(`
+                        *,
+                        users (
+                            wallet_address
+                        )
+                    `)
+                    .eq('file_id', id)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setComments(data || []);
+            } catch (err) {
+                console.error('Error fetching comments:', err);
+                toast.error('Failed to load comments');
+            }
+        }
+
+        fetchComments();
+    }, [id]);
+
+    const handleSubmitComment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!file || !address || !newComment.trim()) return;
+
+        try {
+            setIsSubmittingComment(true);
+
+            // Get user's UUID from their wallet address
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('wallet_address', address)
+                .single();
+
+            if (userError) throw userError;
+            if (!userData) throw new Error('User not found');
+
+            // Insert the comment
+            const { data: commentData, error: commentError } = await supabase
+                .from('comments')
+                .insert([
+                    {
+                        file_id: file.id,
+                        user_id: userData.id,
+                        comment: newComment.trim()
+                    }
+                ])
+                .select(`
+                    *,
+                    users (
+                        wallet_address
+                    )
+                `)
+                .single();
+
+            if (commentError) throw commentError;
+
+            // Update the comments list
+            setComments(prev => [commentData, ...prev]);
+            setNewComment('');
+            toast.success('Comment added successfully');
+        } catch (err) {
+            console.error('Error adding comment:', err);
+            toast.error('Failed to add comment');
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: string) => {
+        if (!address) return;
+
+        try {
+            // Get user's UUID from their wallet address
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('wallet_address', address)
+                .single();
+
+            if (userError) throw userError;
+            if (!userData) throw new Error('User not found');
+
+            // Delete the comment
+            const { error: deleteError } = await supabase
+                .from('comments')
+                .delete()
+                .eq('id', commentId)
+                .eq('user_id', userData.id);
+
+            if (deleteError) throw deleteError;
+
+            // Update the comments list
+            setComments(prev => prev.filter(comment => comment.id !== commentId));
+            toast.success('Comment deleted successfully');
+        } catch (err) {
+            console.error('Error deleting comment:', err);
+            toast.error('Failed to delete comment');
+        }
+    };
+
     if (loading) {
         return (
             <div className="container mx-auto px-4 py-8">
@@ -509,6 +632,73 @@ export default function FileDetailPage() {
                                 </div>
                             </dl>
                         </div>
+                    </div>
+                </div>
+
+                {/* Comments Section */}
+                <div className="mt-8 rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-8">
+                    <h2 className="text-2xl font-bold text-white mb-6">Comments</h2>
+
+                    {/* Comment Form */}
+                    {address ? (
+                        <form onSubmit={handleSubmitComment} className="mb-8">
+                            <Textarea
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Add a comment..."
+                                className="w-full mb-4"
+                                disabled={isSubmittingComment}
+                            />
+                            <Button
+                                type="submit"
+                                disabled={isSubmittingComment || !newComment.trim()}
+                            >
+                                {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                            </Button>
+                        </form>
+                    ) : (
+                        <div className="mb-8 p-4 rounded-lg bg-gray-800/50 text-gray-400">
+                            Please connect your wallet to comment.
+                        </div>
+                    )}
+
+                    {/* Comments List */}
+                    <div className="space-y-6">
+                        {comments.length === 0 ? (
+                            <p className="text-gray-400">No comments yet.</p>
+                        ) : (
+                            comments.map((comment) => (
+                                <div
+                                    key={comment.id}
+                                    className="rounded-lg border border-gray-800 bg-gray-900/30 p-4"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="font-mono text-sm text-gray-400">
+                                                    {comment.users.wallet_address.slice(0, 6)}...
+                                                    {comment.users.wallet_address.slice(-4)}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {format(new Date(comment.created_at), 'PPp')}
+                                                </span>
+                                            </div>
+                                            <p className="text-gray-300">{comment.comment}</p>
+                                        </div>
+                                        {address === comment.users.wallet_address && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteComment(comment.id)}
+                                                className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                                title="Delete comment"
+                                            >
+                                                <TrashIcon className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 

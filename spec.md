@@ -115,6 +115,9 @@ Files Table
 id: UUID
 Primary key; auto-generated.
 
+user_id: UUID
+User ID of the user who added the file: required.
+
 filecoin_hash: Text
 Unique hash of the file stored on Filecoin; required.
 
