@@ -17,6 +17,7 @@ import { REWARD_POINTS } from '@/config/rewards';
 import { updateUserPoints } from '@/lib/rewards';
 import { useUser } from '@/hooks/useUser';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 interface Comment {
     id: string;
@@ -41,6 +42,12 @@ interface FileTagResponse {
     }>;
 }
 
+enum FileStatus {
+    AVAILABLE = 'Available',
+    UNAVAILABLE = 'Unavailable',
+    PENDING = 'Unknown',
+}
+
 export default function FileDetailPage() {
     const { id } = useParams();
     const { address } = useWallet();
@@ -55,6 +62,20 @@ export default function FileDetailPage() {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [status, setStatus] = useState<FileStatus>(FileStatus.PENDING);
+
+    const fetchAvailability = async (hash: string) => {
+        const data = await fetch(
+            `https://api.lighthouse.storage/api/lighthouse/file_info?cid=${hash}`
+        )
+
+        const json = await data.json();
+        if (json.error) {
+            setStatus(FileStatus.UNAVAILABLE);
+        } else {
+            setStatus(FileStatus.AVAILABLE);
+        }
+    }
 
     useEffect(() => {
         async function fetchFileDetails() {
@@ -100,6 +121,7 @@ export default function FileDetailPage() {
                 };
 
                 setFile(fileWithTags);
+                fetchAvailability(fileWithTags.filecoin_hash);
             } catch (err) {
                 console.error('Error fetching file details:', err);
                 setError(
@@ -493,9 +515,9 @@ export default function FileDetailPage() {
                     </Button>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-8">
+                <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-4 md:p-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
+                        <div className='grid grid-cols-1 gap-4'>
                             {file.thumbnail_url ? (
                                 <div className="relative h-80 w-full overflow-hidden rounded-xl border border-gray-800">
                                     <Image
@@ -512,17 +534,39 @@ export default function FileDetailPage() {
                                     </span>
                                 </div>
                             )}
+
+                            {file.description && (
+                                <div className="hidden md:block rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                    <dt className="text-sm font-medium text-gray-400">
+                                        Description
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-300">
+                                        {file.description}
+                                    </dd>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-6">
                             <h1 className="text-3xl font-bold text-white">
-                                {file.file_name || 'Unnamed File'}
+                                {file.file_name}
                             </h1>
+
+                            {file.description && (
+                                <div className="block md:hidden rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                                    <dt className="text-sm font-medium text-gray-400">
+                                        Description
+                                    </dt>
+                                    <dd className="mt-1 text-sm text-gray-300">
+                                        {file.description}
+                                    </dd>
+                                </div>
+                            )}
 
                             <dl className="grid grid-cols-1 gap-4">
                                 <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
                                     <dt className="text-sm font-medium text-gray-400">
-                                        Filecoin Hash
+                                        Hash
                                     </dt>
                                     <dd className="mt-1 font-mono text-sm text-gray-300 break-all flex items-center gap-2">
                                         {file.filecoin_hash}
@@ -563,7 +607,7 @@ export default function FileDetailPage() {
                                         <dt className="text-sm font-medium text-gray-400">
                                             Network
                                         </dt>
-                                        <dd className="mt-1 text-sm text-gray-300">
+                                        <dd className="mt-1 text-sm text-gray-300 capitalize">
                                             {file.network}
                                         </dd>
                                     </div>
@@ -603,24 +647,22 @@ export default function FileDetailPage() {
 
                                     <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
                                         <dt className="text-sm font-medium text-gray-400">
-                                            Upload Date
+                                            Availability
                                         </dt>
                                         <dd className="mt-1 text-sm text-gray-300">
-                                            {format(new Date(file.upload_date), 'PPP')}
+                                            <div className='flex items-center gap-2 mb-2'>
+                                                <div className="relative w-2 h-2">
+                                                    <span className={cn('absolute rounded-full h-2 w-2 inline-block', status === FileStatus.AVAILABLE ? 'bg-green-500 animate-ping' : status === FileStatus.UNAVAILABLE ? 'bg-red-500' : 'bg-yellow-500')} />
+                                                    {status === FileStatus.AVAILABLE && <span className="absolute rounded-full h-2 w-2 inline-block bg-green-500" />}
+                                                </div>
+                                                {status}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                Powered by <Link href="https://lighthouse.storage" target="_blank" className="text-blue-400 hover:text-blue-300 transition-colors">Lighthouse</Link>
+                                            </div>
                                         </dd>
                                     </div>
                                 </div>
-
-                                {file.description && (
-                                    <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
-                                        <dt className="text-sm font-medium text-gray-400">
-                                            Description
-                                        </dt>
-                                        <dd className="mt-1 text-sm text-gray-300">
-                                            {file.description}
-                                        </dd>
-                                    </div>
-                                )}
 
                                 <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
                                     <dt className="text-sm font-medium text-gray-400">
