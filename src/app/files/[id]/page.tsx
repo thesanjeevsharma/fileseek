@@ -64,7 +64,7 @@ export default function FileDetailPage() {
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const [status, setStatus] = useState<FileStatus>(FileStatus.PENDING);
 
-    const fetchAvailability = async (hash: string) => {
+    const fetchAvailability = useCallback(async (hash: string) => {
         const data = await fetch(
             `https://api.lighthouse.storage/api/lighthouse/file_info?cid=${hash}`
         )
@@ -75,7 +75,7 @@ export default function FileDetailPage() {
         } else {
             setStatus(FileStatus.AVAILABLE);
         }
-    }
+    }, []);
 
     useEffect(() => {
         async function fetchFileDetails() {
@@ -133,7 +133,7 @@ export default function FileDetailPage() {
         }
 
         fetchFileDetails();
-    }, [id]);
+    }, [id, fetchAvailability]);
 
     const fetchUserVote = useCallback(async () => {
         if (!id || !address) return;

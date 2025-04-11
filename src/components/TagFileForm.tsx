@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { REWARD_POINTS } from '@/config/rewards';
 import { updateUserPoints } from '@/lib/rewards';
-
+import { getRandomPoints } from '@/lib/drand';
 interface TagFileFormProps {
     onSuccess: (file: File) => void;
     onCancel: () => void;
@@ -95,7 +95,14 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
             }
 
             // Award points for tagging a file
-            await updateUserPoints(user.id, REWARD_POINTS.TAG_FILE);
+            const randomPoints = await getRandomPoints();
+            const finalRewardPoints = REWARD_POINTS.TAG_FILE + randomPoints;
+
+            if (finalRewardPoints > REWARD_POINTS.TAG_FILE) {
+                toast.success(`You earned ${randomPoints} extra points!`);
+            }
+
+            await updateUserPoints(user.id, finalRewardPoints);
             await refreshUser();
 
             onSuccess(file);
@@ -134,7 +141,7 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
 
             <div>
                 <label htmlFor="file_name" className="block text-sm font-medium text-gray-300">
-                    File Name
+                    File Name *
                 </label>
                 <input
                     type="text"
@@ -143,6 +150,7 @@ export function TagFileForm({ onSuccess, onCancel }: TagFileFormProps) {
                     className="mt-2 block w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={formData.file_name}
                     onChange={handleChange}
+                    required
                 />
             </div>
 
