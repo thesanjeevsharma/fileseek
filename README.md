@@ -67,6 +67,7 @@ FileSeek provides a user-friendly interface that enables:
 ## Contributors
 
 - [Sanjeev Sharma](https://linkedin.com/in/thesanjeevsharma)
+- [Ravish Kumar Sharma](https://github.com/ravish1729)
 
 ## Project Plan
 For a detailed project plan and database schema, refer [spec.md](spec.md).
