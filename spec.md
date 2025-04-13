@@ -40,17 +40,14 @@ Layout:
 A card-based grid where each card represents a file stored on Filecoin.
 
 Displayed Information:
-File type and size.
+File type, size and Votes.
 Tags associated with the file.
 Thumbnail (user-uploaded or default based on file type).
-Vote counts (upvotes/downvotes).
 
 Functionality:
 Search and filter files based on:
-File type.
+File name.
 Tags.
-Upload date.
-Number of upvotes.
 
 Voting system where users can upvote or downvote files.
 
@@ -58,6 +55,7 @@ Voting system where users can upvote or downvote files.
 Details Displayed:
 All the information shown on the dashboard.
 Additional details such as a description provided by the tagger.
+File availability using Lighthouse's API.
 Comments section displaying existing comments.
 Report button for users to flag files.
 
@@ -66,7 +64,7 @@ Tagging New Files:
 
 Accessible via a header button.
 Opens a modal with a form requesting:
-Required: Network, file path, file size, file type.
+Required: File name, file path, file size, file type.
 Optional: Thumbnail, description.
 
 User Actions (Require Authentication):
@@ -86,6 +84,11 @@ Users are rewarded with points for tagging files.
 
 Configuration:
 Reward points (e.g., 10 points per tagged file) are configurable and stored as a constant in a dedicated configuration file.
+
+Current points:
+Tagging a file: 10 + random number generated using drand randomness
+Upvote on a file: 2
+Downvote on a file: -1
 
 User Reward Tracking:
 Reward points are recorded in the user profile in Supabase.
