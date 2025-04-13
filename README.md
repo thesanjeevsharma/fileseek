@@ -16,6 +16,15 @@ FileSeek provides a user-friendly interface that enables:
 - Viewing file details with an option to see a custom thumbnail (if provided) or a default based on file type.
 - Engaging with content through votes, comments, and reports.
 
+## Demo
+
+[FileSeek Demo YT Video](https://youtu.be/TyhocRIFCtA)
+
+## Sponsor Tech
+
+- Randamu: Using `drand-client` to get a randomness. This randomness is converted into a random bonus points for tagging a file.
+- File path: `src/lib/drand.ts`
+
 ## Tech Stack
 
 - **Frontend**: Next.js, Shadcn (component library), Tailwind CSS
@@ -55,10 +64,6 @@ FileSeek provides a user-friendly interface that enables:
 - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key.
 
-## Demo
-
-[Placeholder for a demo video]
-
 ## Contributors
 
 - [Sanjeev Sharma](https://linkedin.com/in/thesanjeevsharma)
@@ -71,4 +76,15 @@ For a detailed project plan and database schema, refer [spec.md](spec.md).
 - Filecoin for providing the storage infrastructure.
 - Supabase for the database and authentication services.
 - Lighthouse for providing an open API to check file availability.
+- Randamu for providing verifiable randomness that powers our reward system.
 - MetaMask for wallet authentication.
+
+## Future Vision
+
+Next set of features in the pipeline:
+1. Launch "Quests":
+- Users can demand certain type of data.
+- The community contributes by finding and tagging requested data while earning points. 
+2. Automated backup for files that have high engagement - to have 100% availability.
+3. Map reward points to a token system.
+4. Build a MCP server for AI, to access Filecoin's data through FileSeek.
