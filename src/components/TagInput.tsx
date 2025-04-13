@@ -152,6 +152,9 @@ export function TagInput({
                     disabled={disabled || isLoading}
                 />
             </div>
+            <span className="text-xs text-gray-500">
+                Choose a tag from the suggestions or type a new one. Press Enter to add.
+            </span>
 
             {showSuggestions && suggestions.length > 0 && (
                 <div

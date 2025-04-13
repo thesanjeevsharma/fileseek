@@ -11,7 +11,7 @@ export function useTags() {
 				.from("tags")
 				.select("*")
 				.ilike("tag", `%${query}%`)
-				.limit(10);
+				.limit(30);
 
 			if (searchError) throw searchError;
 			return data || [];
@@ -34,7 +34,7 @@ export function useTags() {
 				.from("tags")
 				.select("*")
 				.ilike("tag", normalizedTag)
-				.limit(1);
+				.limit(3);
 
 			if (searchError) throw searchError;
 

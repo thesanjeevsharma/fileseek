@@ -15,7 +15,7 @@ interface UseFilesOptions {
 }
 
 export function useFiles({
-	limit = 10,
+	limit = 30,
 	orderBy = "upload_date",
 	filterByType,
 	filterByTags = [],
